@@ -39,7 +39,8 @@ alignment = 1
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 5
-text = "000"
+text = "111
+"
 label_settings = SubResource("LabelSettings_yrpvj")
 horizontal_alignment = 1
 
@@ -55,3 +56,6 @@ horizontal_alignment = 1
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 5
+
+[connection signal="gui_input" from="MarginContainer/HBoxContainer" to="." method="_on_h_box_container_gui_input"]
+[connection signal="item_rect_changed" from="MarginContainer/HBoxContainer" to="." method="_on_h_box_container_item_rect_changed"]
