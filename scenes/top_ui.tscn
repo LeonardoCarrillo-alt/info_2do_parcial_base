@@ -39,7 +39,8 @@ alignment = 1
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 5
-text = "111
+theme_override_font_sizes/font_size = 40
+text = "00
 "
 label_settings = SubResource("LabelSettings_yrpvj")
 horizontal_alignment = 1
@@ -56,6 +57,13 @@ horizontal_alignment = 1
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 5
+
+[node name="time_label" type="Label" parent="MarginContainer/HBoxContainer"]
+layout_mode = 2
+theme_override_fonts/font = ExtResource("2_pei76")
+theme_override_font_sizes/font_size = 40
+text = "000
+"
 
 [connection signal="gui_input" from="MarginContainer/HBoxContainer" to="." method="_on_h_box_container_gui_input"]
 [connection signal="item_rect_changed" from="MarginContainer/HBoxContainer" to="." method="_on_h_box_container_item_rect_changed"]

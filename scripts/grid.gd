@@ -14,7 +14,6 @@ var state
 @export var score_label: Label
 @export var counter_label: Label
 
-var score: int = 12
 var moves_left: int = 30
 
 # piece array
@@ -61,16 +60,35 @@ var final_touch = Vector2.ZERO
 var is_controlling = false
 
 # scoring variables and signals
+#score vars and signal
+var score = 0
+var score_final = 0
+signal score_changed(new_score)
 
+# time vars and signal
+var time = 120 
+var time_passed = 0 
+var time_left = time 
+signal time_changed(new_time)
 # counter variables and signals
-
+# movements vars
+var movement = 20
+signal movements_changed(new_moves)
 func _ready():
 	state = MOVE
 	randomize()
 	all_pieces = make_2d_array()
 	spawn_pieces()
+	emit_signal("movements_changed", movement)
+	start_timer()
 	
-	# Inicializar los valores
+	# Inicializar los valore
+
+func start_timer():
+	var timer_label = get_parent().get_node("MarginContainer/HBoxContainer/time_label")
+	if timer_label:
+		timer_label.text = str(time_left) 
+	
 
 func make_2d_array():
 	var array = []
@@ -183,6 +201,12 @@ func touch_difference(grid_1, grid_2):
 func _process(delta):
 	if state == MOVE:
 		touch_input()
+		time_passed += delta
+	if time_passed >= 1:
+		time_left -= 1
+		emit_signal("time_changed", time_left)
+		time_passed = 0
+		check_game_over()
 
 func find_matches():
 	for i in width:
@@ -258,16 +282,25 @@ func create_special_piece(position: Vector2, color: String):
 		
 func destroy_matched():
 	var was_matched = false
+	var pieces_destroyed = 0
 	for i in width:
 		for j in height:
 			if all_pieces[i][j] != null and all_pieces[i][j].matched:
 				was_matched = true
+				pieces_destroyed += 1
 				all_pieces[i][j].queue_free()
 				all_pieces[i][j] = null
+	if pieces_destroyed > 0:
+		score += pieces_destroyed * 10
+		emit_signal("score_changed", score)
+		print("Score: ", score)
 				
 	move_checked = true
 	if was_matched:
 		get_parent().get_node("collapse_timer").start()
+		movement -= 1
+		emit_signal("movements_changed", movement)
+		check_game_over()
 	else:
 		swap_back()
 
@@ -331,6 +364,20 @@ func _on_collapse_timer_timeout():
 func _on_refill_timer_timeout():
 	refill_columns()
 	
+func check_game_over():
+	# Verificacion game over
+	if time_left <= 0 or movement <= 0:
+		game_over()
+		return true
+	return false
+
 func game_over():
 	state = WAIT
-	print("game over")
+	score_final = score
+	print("GAME OVER")
+	print("Tiempo restante: ", time_left)
+	print("Movimientos restantes: ", movement)
+	print("Reiniciando en 3 segundos...")
+	print("tu score final es: ", score_final)
+	await get_tree().create_timer(3.0).timeout
+	get_tree().reload_current_scene()

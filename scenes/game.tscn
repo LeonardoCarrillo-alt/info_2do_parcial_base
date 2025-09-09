@@ -41,6 +41,7 @@ one_shot = true
 wait_time = 0.5
 one_shot = true
 
+[connection signal="item_rect_changed" from="top_ui" to="grid" method="_on_top_ui_item_rect_changed"]
 [connection signal="timeout" from="destroy_timer" to="grid" method="_on_destroy_timer_timeout"]
 [connection signal="timeout" from="collapse_timer" to="grid" method="_on_collapse_timer_timeout"]
 [connection signal="timeout" from="refill_timer" to="grid" method="_on_refill_timer_timeout"]
