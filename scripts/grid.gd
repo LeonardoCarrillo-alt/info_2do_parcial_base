@@ -13,7 +13,9 @@ var state
 @export var y_offset: int
 @export var score_label: Label
 @export var counter_label: Label
+@export var is_explosive = true
 
+#var score: int = 12
 var moves_left: int = 30
 
 # piece array
@@ -35,7 +37,25 @@ var special_pieces = [
 	preload("res://scenes/special_yellow_piece.tscn")
 	
 ]
+# explosive pieces
+var explosive_pieces = [
+	preload("res://scenes/special_blue_piece.tscn"),
+	preload("res://scenes/special_green_piece.tscn"),
+	preload("res://scenes/special_light_green_piece.tscn"),
+	preload("res://scenes/special_orange_piece.tscn"),
+	preload("res://scenes/special_pink_piece.tscn"),
+	preload("res://scenes/special_yellow_piece.tscn")
+	
+]
 var special_piece_i = {
+	"blue": 0,		#special blue
+	"green": 1,      # special green
+	"light_green": 2, # special light green
+	"orange": 3,     # special orange
+	"pink": 4,       # special pink
+	"yellow": 5     # special yellow
+}
+var explosive_piece_i = {
 	"blue": 0,		#special blue
 	"green": 1,      # special green
 	"light_green": 2, # special light green
@@ -82,13 +102,12 @@ func _ready():
 	emit_signal("movements_changed", movement)
 	start_timer()
 	
-	# Inicializar los valore
-
+# Inicializar los valores
+	
 func start_timer():
 	var timer_label = get_parent().get_node("MarginContainer/HBoxContainer/time_label")
 	if timer_label:
 		timer_label.text = str(time_left) 
-	
 
 func make_2d_array():
 	var array = []
@@ -209,64 +228,90 @@ func _process(delta):
 		check_game_over()
 
 func find_matches():
+	var matches_found = false
+
 	for i in width:
 		for j in height:
-			if all_pieces[i][j] != null:
-				var current_color = all_pieces[i][j].color
-				
-				# detect horizontal matches
-				if (
-					i > 0 and i < width -1 
-					and 
-					all_pieces[i - 1][j] != null and all_pieces[i + 1][j]
-					and 
-					all_pieces[i - 1][j].color == current_color and all_pieces[i + 1][j].color == current_color
-				):
-					all_pieces[i - 1][j].matched = true
-					all_pieces[i - 1][j].dim()
-					all_pieces[i][j].matched = true
-					all_pieces[i][j].dim()
-					all_pieces[i + 1][j].matched = true
-					all_pieces[i + 1][j].dim()
-					
-					# Verificar si es una línea de 4 horizontal
-					if (i > 1 and all_pieces[i - 2][j] != null and all_pieces[i - 2][j].color == current_color):
-						all_pieces[i -2 ][j].matched = true
-						all_pieces[i-2][j].dim()
-						create_special_piece(Vector2(i, j), current_color)
-						
-					if (i < width - 2 and all_pieces[i + 2][j] != null and all_pieces[i + 2][j].color == current_color):
-						all_pieces[i+2][j].matched = true
-						all_pieces[i+2][j].dim()
-						create_special_piece(Vector2(i, j), current_color)
-				
-				# detect vertical matches
-				if (
-					j > 0 and j < height -1 
-					and 
-					all_pieces[i][j - 1] != null and all_pieces[i][j + 1]
-					and 
-					all_pieces[i][j - 1].color == current_color and all_pieces[i][j + 1].color == current_color
-				):
-					all_pieces[i][j - 1].matched = true
-					all_pieces[i][j - 1].dim()
-					all_pieces[i][j].matched = true
-					all_pieces[i][j].dim()
-					all_pieces[i][j + 1].matched = true
-					all_pieces[i][j + 1].dim()
-					
-					# Verificar si es una línea de 4 vertical
-					if (j > 1 and all_pieces[i][j - 2] != null and all_pieces[i][j - 2].color == current_color):
-						all_pieces[i][j-2].matched = true
-						all_pieces[i][j-2].dim()
-						create_special_piece(Vector2(i, j), current_color)
-					if (j < height - 2 and all_pieces[i][j + 2] != null and all_pieces[i][j + 2].color == current_color):
-						all_pieces[i][j+2].matched = true
-						all_pieces[i][j+2].dim()
-						create_special_piece(Vector2(i, j), current_color)
-	get_parent().get_node("destroy_timer").start()
+			var piece = all_pieces[i][j]
+			if piece == null:
+				continue
+
+			var color = piece.color
+
+			# ---------------- HORIZONTAL ----------------
+			var hor_match = [Vector2(i,j)]
+			var x = i - 1
+			while x >= 0 and all_pieces[x][j] != null and all_pieces[x][j].color == color:
+				hor_match.append(Vector2(x, j))
+				x -= 1
+			x = i + 1
+			while x < width and all_pieces[x][j] != null and all_pieces[x][j].color == color:
+				hor_match.append(Vector2(x, j))
+				x += 1
+
+			# ---------------- VERTICAL ----------------
+			var ver_match = [Vector2(i,j)]
+			var y = j - 1
+			while y >= 0 and all_pieces[i][y] != null and all_pieces[i][y].color == color:
+				ver_match.append(Vector2(i, y))
+				y -= 1
+			y = j + 1
+			while y < height and all_pieces[i][y] != null and all_pieces[i][y].color == color:
+				ver_match.append(Vector2(i, y))
+				y += 1
+
+			# ---------------- MARCAR MATCHES ----------------
+			var hor_count = hor_match.size()
+			var ver_count = ver_match.size()
+
+			if hor_count >= 3:
+				for pos in hor_match:
+					var p = all_pieces[pos.x][pos.y]
+					if p != null:
+						p.matched = true
+						p.dim()
+				matches_found = true
+
+			if ver_count >= 3:
+				for pos in ver_match:
+					var p = all_pieces[pos.x][pos.y]
+					if p != null:
+						p.matched = true
+						p.dim()
+				matches_found = true
+
+			# ---------------- SPECIAL PIECE ----------------
+			if hor_count == 4 or ver_count == 4:
+				create_special_piece(Vector2(i,j), color)
+
+			# ---------------- EXPLOSIVE PIECE ----------------
+			if hor_count >= 3 and ver_count >= 3:
+				create_explosive_piece(Vector2(i,j), color)
+
+	if matches_found:
+		get_parent().get_node("destroy_timer").start()
+	else:
+		swap_back()
+
+func create_explosive_piece(position: Vector2, color: String):
+	if (color in explosive_piece_i): 
+		var explosive_i = explosive_piece_i[color]
+		var explosive_piece = explosive_pieces[explosive_i].instantiate()
+		add_child(explosive_piece)
+		explosive_piece.position = grid_to_pixel(position.x, position.y)
+		
+		explosive_piece.is_explosive = true
+		explosive_piece.color = color
+		explosive_piece.special_type = "bomb"  # <-- nuevo
+		
+		if (all_pieces[position.x][position.y] != null):
+			var normal_piece = all_pieces[position.x][position.y]
+			if is_instance_valid(normal_piece) and normal_piece.has_method("queue_free"):
+				normal_piece.queue_free()
+		
+		all_pieces[position.x][position.y] = explosive_piece
+
 func create_special_piece(position: Vector2, color: String):
-	# Evitar crear múltiples piezas especiales en un mismo movimiento
 	if (color in special_piece_i): 
 		var special_i = special_piece_i[color]
 		var special_piece = special_pieces[special_i].instantiate()
@@ -277,24 +322,37 @@ func create_special_piece(position: Vector2, color: String):
 			var normal_piece = all_pieces[position.x][position.y]
 			if is_instance_valid(normal_piece) and normal_piece.has_method("queue_free"):
 				normal_piece.queue_free()
+				
 		all_pieces[position.x][position.y] = special_piece
 		special_piece.color = color
+		special_piece.special_type = "line"  # <-- nuevo
+
 		
 func destroy_matched():
 	var was_matched = false
 	var pieces_destroyed = 0
+
 	for i in width:
 		for j in height:
 			if all_pieces[i][j] != null and all_pieces[i][j].matched:
+				var piece = all_pieces[i][j]
 				was_matched = true
 				pieces_destroyed += 1
+
+				# Si es especial -> activar su poder
+				if piece.special_type != null or piece.is_explosive:
+					piece.explode(self)
+
+				# Eliminar la pieza
 				all_pieces[i][j].queue_free()
 				all_pieces[i][j] = null
+
+	# si hubo destrucciones, sumar puntaje
 	if pieces_destroyed > 0:
-		score += pieces_destroyed * 10
+		score += pieces_destroyed * 10  # 10 puntos por pieza destruida
 		emit_signal("score_changed", score)
 		print("Score: ", score)
-				
+
 	move_checked = true
 	if was_matched:
 		get_parent().get_node("collapse_timer").start()
@@ -303,6 +361,40 @@ func destroy_matched():
 		check_game_over()
 	else:
 		swap_back()
+
+
+func explode_line(position: Vector2):
+	var grid_pos = pixel_to_grid(position.x, position.y)
+	var col = grid_pos.x
+	var row = grid_pos.y
+
+	# Aleatoriamente destruye fila o columna (puedes decidir fijo si prefieres)
+	if randi() % 2 == 0:
+		# Destruir fila
+		for x in width:
+			if all_pieces[x][row] != null:
+				all_pieces[x][row].matched = true
+				all_pieces[x][row].dim()
+	else:
+		# Destruir columna
+		for y in height:
+			if all_pieces[col][y] != null:
+				all_pieces[col][y].matched = true
+				all_pieces[col][y].dim()
+	get_parent().get_node("destroy_timer").start()
+
+func explode_area(position: Vector2):
+	var grid_pos = pixel_to_grid(position.x, position.y)
+	var col = grid_pos.x
+	var row = grid_pos.y
+
+	for x in range(col - 1, col + 2):
+		for y in range(row - 1, row + 2):
+			if in_grid(x, y) and all_pieces[x][y] != null:
+				all_pieces[x][y].matched = true
+				all_pieces[x][y].dim()
+	get_parent().get_node("destroy_timer").start()
+
 
 func collapse_columns():
 	for i in width:
@@ -370,7 +462,7 @@ func check_game_over():
 		game_over()
 		return true
 	return false
-
+	
 func game_over():
 	state = WAIT
 	score_final = score
